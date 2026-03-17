@@ -1,0 +1,29 @@
+# Build output
+target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# JCo native libraries (must be downloaded separately due to SAP licensing)
+lib/*.dll
+lib/*.so
+lib/*.dylib
+lib/*.jar
+
+# Keep lib directory
+!lib/.gitkeep

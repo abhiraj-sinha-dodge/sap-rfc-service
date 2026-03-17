@@ -1,0 +1,7 @@
+# Place SAP JCo files here:
+# - sapjco3.jar (required)
+# - sapjco3.dll (Windows)
+# - libsapjco3.so (Linux)
+# - libsapjco3.dylib (macOS)
+#
+# Download from: https://support.sap.com/en/product/connectors/jco.html
