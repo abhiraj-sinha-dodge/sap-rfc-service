@@ -1,12 +1,12 @@
 package com.dodge.rfc.api.po;
 
 import com.dodge.rfc.api.po.dto.*;
+import com.dodge.rfc.model.PagedResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -20,12 +20,13 @@ public class PurchaseOrderController {
     }
 
     @GetMapping
-    public List<PoHeader> list(
+    public PagedResponse<PoHeader> list(
             @RequestParam(required = false) String companyCode,
             @RequestParam(required = false) String vendor,
             @RequestParam(required = false) String purchasingOrg,
-            @RequestParam(defaultValue = "50") int limit) {
-        return poService.list(companyCode, vendor, purchasingOrg, limit);
+            @RequestParam(defaultValue = "50") int limit,
+            @RequestParam(defaultValue = "1")  int page) {
+        return poService.list(companyCode, vendor, purchasingOrg, limit, page);
     }
 
     @GetMapping("/{poNumber}")

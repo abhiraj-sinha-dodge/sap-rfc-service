@@ -1,12 +1,12 @@
 package com.dodge.rfc.api.invoice;
 
 import com.dodge.rfc.api.invoice.dto.*;
+import com.dodge.rfc.model.PagedResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -20,12 +20,14 @@ public class InvoiceController {
     }
 
     @GetMapping
-    public List<InvoiceHeader> list(
+    public PagedResponse<InvoiceHeader> list(
             @RequestParam(required = false) String companyCode,
             @RequestParam(required = false) String vendor,
             @RequestParam(required = false) String dateFrom,
-            @RequestParam(required = false) String dateTo) {
-        return invoiceService.list(companyCode, vendor, dateFrom, dateTo);
+            @RequestParam(required = false) String dateTo,
+            @RequestParam(defaultValue = "50") int limit,
+            @RequestParam(defaultValue = "1")  int page) {
+        return invoiceService.list(companyCode, vendor, dateFrom, dateTo, limit, page);
     }
 
     @GetMapping("/{docNumber}/{fiscalYear}")

@@ -2,6 +2,7 @@ package com.dodge.rfc.api.po;
 
 import com.dodge.rfc.api.po.dto.*;
 import com.dodge.rfc.exception.SapException;
+import com.dodge.rfc.model.PagedResponse;
 import com.dodge.rfc.model.RfcRequest;
 import com.dodge.rfc.model.RfcResponse;
 import com.dodge.rfc.service.RfcService;
@@ -23,13 +24,16 @@ public class PurchaseOrderService {
         this.destination = destination;
     }
 
-    public List<PoHeader> list(String companyCode, String vendor, String purchasingOrg, int limit) {
+    public PagedResponse<PoHeader> list(String companyCode, String vendor,
+                                        String purchasingOrg, int limit, int page) {
+        int skip = (page - 1) * limit;
+
         List<Map<String, Object>> options = new ArrayList<>();
         List<String> conditions = new ArrayList<>();
-        conditions.add("MANDT = '800'");
-        if (companyCode    != null) conditions.add("BUKRS = '" + companyCode + "'");
-        if (vendor         != null) conditions.add("LIFNR = '" + vendor + "'");
-        if (purchasingOrg  != null) conditions.add("EKORG = '" + purchasingOrg + "'");
+        // MANDT must NOT be in OPTIONS — RFC_READ_TABLE filters by current client implicitly
+        if (companyCode   != null) conditions.add("BUKRS = '" + companyCode + "'");
+        if (vendor        != null) conditions.add("LIFNR = '" + vendor + "'");
+        if (purchasingOrg != null) conditions.add("EKORG = '" + purchasingOrg + "'");
 
         for (int i = 0; i < conditions.size(); i++) {
             String cond = i == 0 ? conditions.get(i) : "AND " + conditions.get(i);
@@ -39,9 +43,11 @@ public class PurchaseOrderService {
         RfcRequest req = new RfcRequest();
         req.setDestination(destination);
         req.setFunctionModule("RFC_READ_TABLE");
+        // Fetch one extra row to detect whether another page exists (N+1 peek)
         req.setImporting(Map.of(
                 "QUERY_TABLE", "EKKO",
-                "ROWCOUNT", limit,
+                "ROWCOUNT", limit + 1,
+                "ROWSKIPS", skip,
                 "DELIMITER", "|"
         ));
         req.setTables(Map.of(
@@ -49,8 +55,7 @@ public class PurchaseOrderService {
                         Map.of("FIELDNAME", "EBELN"), Map.of("FIELDNAME", "BUKRS"),
                         Map.of("FIELDNAME", "EKORG"), Map.of("FIELDNAME", "EKGRP"),
                         Map.of("FIELDNAME", "LIFNR"), Map.of("FIELDNAME", "BEDAT"),
-                        Map.of("FIELDNAME", "WAERS"), Map.of("FIELDNAME", "BSTYP"),
-                        Map.of("FIELDNAME", "NETWR")
+                        Map.of("FIELDNAME", "WAERS"), Map.of("FIELDNAME", "BSTYP")
                 ),
                 "OPTIONS", options
         ));
@@ -59,7 +64,7 @@ public class PurchaseOrderService {
         assertSuccess(res, "RFC_READ_TABLE(EKKO)");
 
         List<Map<String, String>> fields = extractFields(res.getTables().getOrDefault("FIELDS", List.of()));
-        return res.getTables().getOrDefault("DATA", List.of()).stream()
+        List<PoHeader> items = res.getTables().getOrDefault("DATA", List.of()).stream()
                 .map(row -> {
                     Map<String, String> p = parseWa(str(row, "WA"), fields);
                     return new PoHeader(
@@ -71,9 +76,14 @@ public class PurchaseOrderService {
                             p.getOrDefault("BEDAT", "").trim(),
                             p.getOrDefault("WAERS", "").trim(),
                             p.getOrDefault("BSTYP", "").trim(),
-                            safeDecimal(p.getOrDefault("NETWR", "0"))
+                            BigDecimal.ZERO
                     );
                 }).toList();
+        boolean hasMore = items.size() > limit;
+        List<PoHeader> trimmed = hasMore ? items.subList(0, limit) : items;
+        // Synthetic total: at least the rows we know about, plus one more page if hasMore
+        int syntheticTotal = skip + trimmed.size() + (hasMore ? limit : 0);
+        return new PagedResponse<>(trimmed, page, limit, syntheticTotal, hasMore);
     }
 
     public PoDetail get(String poNumber) {
@@ -87,8 +97,7 @@ public class PurchaseOrderService {
                         Map.of("FIELDNAME", "EBELN"), Map.of("FIELDNAME", "BUKRS"),
                         Map.of("FIELDNAME", "EKORG"), Map.of("FIELDNAME", "EKGRP"),
                         Map.of("FIELDNAME", "LIFNR"), Map.of("FIELDNAME", "BEDAT"),
-                        Map.of("FIELDNAME", "WAERS"), Map.of("FIELDNAME", "BSTYP"),
-                        Map.of("FIELDNAME", "NETWR")
+                        Map.of("FIELDNAME", "WAERS"), Map.of("FIELDNAME", "BSTYP")
                 ),
                 "OPTIONS", List.of(Map.of("TEXT", "EBELN = '" + poNumber + "'"))
         ));
@@ -106,7 +115,7 @@ public class PurchaseOrderService {
                 h.getOrDefault("EKORG", "").trim(), h.getOrDefault("EKGRP", "").trim(),
                 h.getOrDefault("LIFNR", "").trim(), h.getOrDefault("BEDAT", "").trim(),
                 h.getOrDefault("WAERS", "").trim(), h.getOrDefault("BSTYP", "").trim(),
-                safeDecimal(h.getOrDefault("NETWR", "0"))
+                BigDecimal.ZERO
         );
 
         // Items
@@ -119,8 +128,7 @@ public class PurchaseOrderService {
                         Map.of("FIELDNAME", "EBELP"), Map.of("FIELDNAME", "MATNR"),
                         Map.of("FIELDNAME", "TXZ01"), Map.of("FIELDNAME", "MENGE"),
                         Map.of("FIELDNAME", "MEINS"), Map.of("FIELDNAME", "NETPR"),
-                        Map.of("FIELDNAME", "WERKS"), Map.of("FIELDNAME", "LGORT"),
-                        Map.of("FIELDNAME", "EINDT")
+                        Map.of("FIELDNAME", "WERKS"), Map.of("FIELDNAME", "LGORT")
                 ),
                 "OPTIONS", List.of(Map.of("TEXT", "EBELN = '" + poNumber + "' AND LOEKZ = ' '"))
         ));
@@ -141,7 +149,7 @@ public class PurchaseOrderService {
                                 safeDecimal(p.getOrDefault("NETPR", "0")),
                                 p.getOrDefault("WERKS", "").trim(),
                                 p.getOrDefault("LGORT", "").trim(),
-                                p.getOrDefault("EINDT", "").trim()
+                                ""
                         );
                     }).toList();
         }

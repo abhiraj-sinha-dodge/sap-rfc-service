@@ -10,7 +10,10 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.*;
+
+import com.dodge.rfc.model.PagedResponse;
 
 @Service
 public class InvoiceService {
@@ -24,8 +27,19 @@ public class InvoiceService {
         this.destination = destination;
     }
 
-    public List<InvoiceHeader> list(String companyCode, String vendor,
-                                    String dateFrom, String dateTo) {
+    public PagedResponse<InvoiceHeader> list(String companyCode, String vendor,
+                                              String dateFrom, String dateTo,
+                                              int limit, int page) {
+        // Default to a wide window when no date range provided
+        if (dateFrom == null && dateTo == null) {
+            int year = LocalDate.now().getYear();
+            dateFrom = "19900101";
+            dateTo   = year + "1231";
+        }
+        // Strip dashes if frontend sends YYYY-MM-DD instead of YYYYMMDD
+        dateFrom = dateFrom.replace("-", "");
+        dateTo   = dateTo.replace("-", "");
+
         RfcRequest req = new RfcRequest();
         req.setDestination(destination);
         req.setFunctionModule("BAPI_INCOMINGINVOICE_GETLIST");
@@ -35,23 +49,27 @@ public class InvoiceService {
         if (vendor != null)      importing.put("VENDOR", vendor);
         req.setImporting(importing);
 
-        // Date range filter
-        if (dateFrom != null || dateTo != null) {
-            Map<String, List<Map<String, Object>>> tables = new HashMap<>();
-            Map<String, Object> dateRow = new HashMap<>();
-            dateRow.put("SIGN", "I");
-            dateRow.put("OPTION", "BT");
-            dateRow.put("LOW", dateFrom != null ? dateFrom : "19000101");
-            dateRow.put("HIGH", dateTo != null ? dateTo : "99991231");
-            tables.put("DOCDATE_RA", List.of(dateRow));
-            req.setTables(tables);
-        }
+        // Always set date range (either user-supplied or defaulted above)
+        Map<String, List<Map<String, Object>>> tables = new HashMap<>();
+        Map<String, Object> dateRow = new HashMap<>();
+        dateRow.put("SIGN",   "I");
+        dateRow.put("OPTION", "BT");
+        dateRow.put("LOW",    dateFrom);
+        dateRow.put("HIGH",   dateTo);
+        tables.put("DOCDATE_RA", List.of(dateRow));
+        req.setTables(tables);
 
         RfcResponse res = rfcService.execute(req);
         assertSuccess(res, "BAPI_INCOMINGINVOICE_GETLIST");
 
         List<Map<String, Object>> rows = res.getTables().getOrDefault("HEADERLIST", List.of());
-        return rows.stream().map(this::mapHeader).toList();
+        int skip = (page - 1) * limit;
+        List<InvoiceHeader> paged = rows.stream()
+                .skip(skip)
+                .limit(limit)
+                .map(this::mapHeader)
+                .toList();
+        return new PagedResponse<>(paged, page, limit, rows.size(), skip + paged.size() < rows.size());
     }
 
     public InvoiceDetail get(String docNumber, String fiscalYear) {
@@ -66,7 +84,7 @@ public class InvoiceService {
 
         RfcResponse res = rfcService.execute(req);
 
-        if (!res.isSuccess() && "FM_NOT_FOUND".equals(res.getErrorCode())) {
+        if (!res.isSuccess()) {
             return getViaTable(docNumber, fiscalYear);
         }
 
