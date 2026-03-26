@@ -8,6 +8,9 @@ spring:
     default-property-inclusion: non_null
     serialization:
       indent-output: true
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
 
 # Security
 security:
@@ -15,6 +18,7 @@ security:
 
 # RFC configuration
 rfc:
+  default-destination: ${RFC_DEFAULT_DESTINATION:local}
   timeout:
     default: ${RFC_TIMEOUT_DEFAULT:30}
 
