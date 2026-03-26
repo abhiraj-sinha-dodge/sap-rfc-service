@@ -19,11 +19,8 @@ Thumbs.db
 *.log
 logs/
 
-# JCo native libraries (must be downloaded separately due to SAP licensing)
-lib/*.dll
-lib/*.so
-lib/*.dylib
-lib/*.jar
+# JCo native libraries and bundled files (platform-specific, downloaded separately)
+lib/
 
-# Keep lib directory
+# Keep lib directory placeholder
 !lib/.gitkeep
