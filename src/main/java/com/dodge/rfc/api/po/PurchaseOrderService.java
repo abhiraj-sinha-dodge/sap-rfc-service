@@ -189,17 +189,21 @@ public class PurchaseOrderService {
             String itemStr = String.format("%05d", itemNo);
 
             Map<String, Object> r = new HashMap<>();
-            r.put("PO_ITEM",  itemStr); r.put("MATERIAL", item.material);
+            r.put("PO_ITEM",  itemStr);
+            if (item.material != null && !item.material.isBlank()) r.put("MATERIAL", item.material);
             r.put("PLANT",    item.plant);
             r.put("QUANTITY", item.quantity);
             r.put("PO_UNIT",  item.unit);
             r.put("NET_PRICE",item.netPrice);
+            if (item.shortText != null && !item.shortText.isBlank()) r.put("SHORT_TEXT", item.shortText);
             if (item.storageLocation != null) r.put("STGE_LOC", item.storageLocation);
             if (item.accountAssignmentCategory != null) r.put("ACCTASSCAT", item.accountAssignmentCategory);
             itemRows.add(r);
 
             Map<String, Object> x = new HashMap<>();
-            x.put("PO_ITEM", itemStr); x.put("MATERIAL", "X");
+            x.put("PO_ITEM", itemStr);
+            if (item.material != null && !item.material.isBlank()) x.put("MATERIAL", "X");
+            if (item.shortText != null && !item.shortText.isBlank()) x.put("SHORT_TEXT", "X");
             x.put("PLANT", "X"); x.put("QUANTITY", "X");
             x.put("PO_UNIT", "X"); x.put("NET_PRICE", "X");
             itemXRows.add(x);

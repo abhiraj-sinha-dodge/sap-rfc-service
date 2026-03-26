@@ -21,7 +21,8 @@ public class CreatePoRequest {
     public List<Item> items;
 
     public static class Item {
-        @NotBlank  public String material;
+        public String material;             // optional — omit for text-based items
+        public String shortText;            // item description (used when no material)
         @NotBlank  public String plant;
         @NotNull   public BigDecimal quantity;
         @NotBlank  public String unit;
