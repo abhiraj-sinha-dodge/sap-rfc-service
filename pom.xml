@@ -78,8 +78,16 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <includeSystemScope>true</includeSystemScope>
+                    <!-- ZIP layout enables PropertiesLauncher, which supports loader.path.
+                         This keeps sapjco3.jar outside the fat jar so JCo can verify its
+                         own filename at runtime (it refuses to start if renamed). -->
+                    <layout>ZIP</layout>
                     <excludes>
+                        <!-- Exclude JCo from the fat jar — loaded at runtime via loader.path -->
+                        <exclude>
+                            <groupId>com.sap.conn.jco</groupId>
+                            <artifactId>sapjco3</artifactId>
+                        </exclude>
                         <exclude>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>

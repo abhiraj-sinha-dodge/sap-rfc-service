@@ -29,4 +29,4 @@ echo     -d "{\"destination\":\"local\",\"functionModule\":\"RFC_PING\",\"import
 echo.
 
 REM Run with maven (keeps original JCo JAR name on classpath)
-call mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Djava.library.path=%~dp0lib"
+call mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Djava.library.path=%~dp0lib -Dloader.path=%~dp0lib"

@@ -1,0 +1,17 @@
+target/
+.git/
+.env
+.env.*
+!.env.example
+.idea/
+.vscode/
+*.iml
+*.log
+logs/
+.DS_Store
+Thumbs.db
+.claude/
+
+# Windows/macOS JCo native libs — only libsapjco3.so belongs in the image
+lib/*.dll
+lib/*.dylib
