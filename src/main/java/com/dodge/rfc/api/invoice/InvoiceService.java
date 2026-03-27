@@ -199,7 +199,7 @@ public class InvoiceService {
         headerData.put("COMP_CODE", body.companyCode);
         headerData.put("CURRENCY", body.currency);
         headerData.put("GROSS_AMOUNT", body.grossAmount);
-        headerData.put("DIFF_INV", body.vendor);
+        headerData.put("LIFNR", body.vendor);
         if (body.referenceDoc != null) headerData.put("REF_DOC_NO", body.referenceDoc);
         if (body.headerText  != null) headerData.put("HEADER_TXT", body.headerText);
 
@@ -213,7 +213,10 @@ public class InvoiceService {
             row.put("PO_NUMBER", item.poNumber);
             row.put("PO_ITEM", item.poItem);
             row.put("ITEM_AMOUNT", item.amount);
-            row.put("QUANTITY", item.quantity);
+            // Only send quantity when explicitly provided (GR-based IV items need it)
+            if (item.quantity != null && item.quantity.compareTo(BigDecimal.ZERO) > 0) {
+                row.put("QUANTITY", item.quantity);
+            }
             if (item.unit    != null) row.put("PO_UNIT", item.unit);
             if (item.taxCode != null) row.put("TAX_CODE", item.taxCode);
             itemRows.add(row);

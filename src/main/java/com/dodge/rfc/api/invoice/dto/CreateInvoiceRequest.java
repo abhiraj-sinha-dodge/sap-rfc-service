@@ -26,7 +26,7 @@ public class CreateInvoiceRequest {
         @NotBlank public String poNumber;
         @NotBlank public String poItem;
         @NotNull  public BigDecimal amount;
-        @NotNull  public BigDecimal quantity;
+        public BigDecimal quantity;   // optional — omit for non-GR-based IV items
         public String unit;
         public String taxCode;
     }
